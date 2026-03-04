@@ -1,0 +1,23 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "backend/package.json",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "live-analysis/api/index.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "backend/api/index.ts"
+        },
+        {
+            "src": "/live/(.*)",
+            "dest": "live-analysis/api/index.py"
+        }
+    ]
+}
