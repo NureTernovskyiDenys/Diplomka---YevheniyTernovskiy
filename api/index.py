@@ -1,8 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
-import cv2
-import mediapipe as mp
-import numpy as np
 import tempfile
 import os
 
@@ -16,6 +13,7 @@ def calculate_angle(a, b, c):
     b = Mid point [x,y]
     c = End point [x,y]
     """
+    import numpy as np
     a = np.array(a) # First
     b = np.array(b) # Mid
     c = np.array(c) # End
@@ -35,6 +33,7 @@ _pose_model = None
 def get_pose_model():
     global _mp_pose, _pose_model
     if _pose_model is None:
+        import mediapipe as mp
         _mp_pose = mp.solutions.pose
         _pose_model = _mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
     return _mp_pose, _pose_model
@@ -51,6 +50,9 @@ async def analyze_chunk(video_chunk: UploadFile = File(...)):
     """
     if not video_chunk.filename.endswith(('.mp4', '.webm', '.mov')):
         raise HTTPException(status_code=400, detail="Invalid video format. Use mp4, webm, or mov.")
+
+    import cv2
+    import numpy as np
 
     # Save the chunk temporarily to disk for OpenCV to read
     temp_video_path = ""
