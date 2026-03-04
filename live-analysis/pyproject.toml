@@ -2,4 +2,4 @@
 name = "live-analysis"
 version = "1.0.0"
 description = "Computer Vision module for fitness app."
-requires-python = ">=3.11"
+requires-python = ">=3.12"
