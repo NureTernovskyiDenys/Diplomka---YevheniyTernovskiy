@@ -7,6 +7,13 @@
         },
         {
             "src": "live-analysis/api/index.py",
+            "use": "@vercel/python",
+            "config": {
+                "maxLambdaSize": "250mb"
+            }
+        },
+        {
+            "src": "live-analysis/requirements.txt",
             "use": "@vercel/python"
         }
     ],
