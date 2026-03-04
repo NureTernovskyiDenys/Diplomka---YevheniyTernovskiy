@@ -20,7 +20,7 @@
         },
         {
             "src": "/live/(.*)",
-            "dest": "api/index.py"
+            "dest": "/api/index.py"
         }
     ]
 }
