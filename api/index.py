@@ -28,9 +28,16 @@ def calculate_angle(a, b, c):
         
     return angle
 
-# Initialize MediaPipe Pose
-mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+# Lazy load MediaPipe Pose to prevent Vercel Serverless SIGBUS core dumps on cold boot
+_mp_pose = None
+_pose_model = None
+
+def get_pose_model():
+    global _mp_pose, _pose_model
+    if _pose_model is None:
+        _mp_pose = mp.solutions.pose
+        _pose_model = _mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    return _mp_pose, _pose_model
 
 @app.get("/live/health")
 def health_check():
@@ -70,6 +77,7 @@ async def analyze_chunk(video_chunk: UploadFile = File(...)):
             image.flags.writeable = False
           
             # Make detection
+            mp_pose, pose = get_pose_model()
             results = pose.process(image)
         
             # Extract landmarks and calculate angles/form
