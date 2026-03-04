@@ -2,29 +2,25 @@
     "version": 2,
     "builds": [
         {
-            "src": "backend/package.json",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "live-analysis/api/index.py",
+            "src": "api/**/*.py",
             "use": "@vercel/python",
             "config": {
                 "maxLambdaSize": "250mb"
             }
         },
         {
-            "src": "live-analysis/requirements.txt",
-            "use": "@vercel/python"
+            "src": "backend/package.json",
+            "use": "@vercel/node"
         }
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
+            "src": "/api/nest/(.*)",
             "dest": "backend/api/index.ts"
         },
         {
             "src": "/live/(.*)",
-            "dest": "live-analysis/api/index.py"
+            "dest": "api/index.py"
         }
     ]
 }
