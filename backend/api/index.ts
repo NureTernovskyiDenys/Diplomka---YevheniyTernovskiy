@@ -14,6 +14,8 @@ export const createNestServer = async (expressInstance: express.Express) => {
 
     app.enableCors();
 
+    app.setGlobalPrefix('api/nest');
+
     app.useGlobalPipes(
         new ValidationPipe({
             whitelist: true,
