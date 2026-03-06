@@ -161,41 +161,6 @@ export default function Dashboard() {
                     {/* Left Panel: Filters & List */}
                     <div className="lg:col-span-4 order-2 lg:order-1 flex flex-col gap-6">
 
-                        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 backdrop-blur-sm">
-                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-cyan-400" />
-                                Controls
-                            </h3>
-                            <div className="flex bg-zinc-900 rounded-lg p-1 mb-4 border border-zinc-800">
-                                <button
-                                    onClick={() => setGender('male')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${gender === 'male' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Male
-                                </button>
-                                <button
-                                    onClick={() => setGender('female')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${gender === 'female' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Female
-                                </button>
-                            </div>
-                            <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-                                <button
-                                    onClick={() => setView('front')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${view === 'front' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Front
-                                </button>
-                                <button
-                                    onClick={() => setView('back')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${view === 'back' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Back
-                                </button>
-                            </div>
-                        </div>
-
                         <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 backdrop-blur-sm overflow-hidden flex flex-col max-h-[500px]">
                             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                                 <Dumbbell className="w-5 h-5 text-indigo-400" />
@@ -254,8 +219,8 @@ export default function Dashboard() {
                                                     <button
                                                         onClick={() => setSelectedEquipment(null)}
                                                         className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${selectedEquipment === null
-                                                                ? 'bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
-                                                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'
+                                                            ? 'bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
+                                                            : 'bg-zinc-800/50 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'
                                                             }`}
                                                     >
                                                         All
@@ -265,8 +230,8 @@ export default function Dashboard() {
                                                             key={eq}
                                                             onClick={() => setSelectedEquipment(eq)}
                                                             className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all capitalize ${selectedEquipment === eq
-                                                                    ? 'bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
-                                                                    : 'bg-zinc-800/50 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'
+                                                                ? 'bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
+                                                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'
                                                                 }`}
                                                         >
                                                             {eq}
