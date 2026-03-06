@@ -63,11 +63,11 @@ const BODYPART_MAPPING = {
     'neck': 'neck'
 };
 
-function DualBodyMap({ activeMuscle, setActiveMuscle }) {
+function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
     // Determine which slugs should be highlighted based on the active API target
     const getHighlightedMuscles = () => {
         if (!activeMuscle) return [];
-        const map = MUSCLE_MAPPING;
+        const map = mode === 'full' ? MUSCLE_MAPPING : BODYPART_MAPPING;
         // Find all slugs that map to the active target
         const slugs = Object.keys(map).filter(k => map[k] === activeMuscle);
         return slugs;
@@ -77,28 +77,30 @@ function DualBodyMap({ activeMuscle, setActiveMuscle }) {
     const data = highlighted.length > 0 ? [{ name: 'Target', muscles: highlighted }] : [];
 
     const handleClick = ({ muscle }) => {
-        const map = MUSCLE_MAPPING;
+        const map = mode === 'full' ? MUSCLE_MAPPING : BODYPART_MAPPING;
         const apiTarget = map[muscle];
         if (apiTarget) setActiveMuscle(activeMuscle === apiTarget ? null : apiTarget);
     };
 
     return (
-        <div className="flex flex-row items-center justify-center gap-4 w-full h-[450px]">
-            <div className="h-full bg-zinc-900/30 rounded-2xl border border-zinc-800/50 p-4 drop-shadow-2xl overflow-hidden flex items-center">
+        <div className="flex flex-row items-center justify-center gap-6 w-full h-[650px]">
+            <div className="h-full bg-zinc-900/40 rounded-3xl border border-zinc-800/60 p-6 drop-shadow-2xl overflow-hidden flex items-center justify-center transition-all hover:border-cyan-500/30">
                 <Model
                     type="anterior"
+                    gender={gender}
                     data={data}
-                    style={{ height: '350px', cursor: 'pointer' }}
+                    style={{ height: '560px', cursor: 'pointer' }}
                     onClick={handleClick}
                     highlightedColors={['#06b6d4']} // cyan-500
                     bodyColor="#27272a"
                 />
             </div>
-            <div className="h-full bg-zinc-900/30 rounded-2xl border border-zinc-800/50 p-4 drop-shadow-2xl overflow-hidden flex items-center">
+            <div className="h-full bg-zinc-900/40 rounded-3xl border border-zinc-800/60 p-6 drop-shadow-2xl overflow-hidden flex items-center justify-center transition-all hover:border-cyan-500/30">
                 <Model
                     type="posterior"
+                    gender={gender}
                     data={data}
-                    style={{ height: '350px', cursor: 'pointer' }}
+                    style={{ height: '560px', cursor: 'pointer' }}
                     onClick={handleClick}
                     highlightedColors={['#06b6d4']} // cyan-500
                     bodyColor="#27272a"
@@ -257,7 +259,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                     {/* Left Panel: Filters & List */}
-                    <div className="lg:col-span-4 order-2 lg:order-1 flex flex-col gap-6">
+                    <div className="lg:col-span-3 order-2 lg:order-1 flex flex-col gap-6">
 
                         <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 backdrop-blur-sm overflow-hidden flex flex-col max-h-[500px]">
                             <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
@@ -310,7 +312,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Center Panel: Interactive Map */}
-                    <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center">
+                    <div className="lg:col-span-5 order-1 lg:order-2 flex flex-col items-center">
                         <DualBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} />
                     </div>
 
