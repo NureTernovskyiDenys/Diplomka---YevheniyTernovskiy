@@ -37,6 +37,14 @@ export class ExercisesController {
         return this.exercisesService.getEquipments();
     }
 
+    @Get()
+    async getAllExercises(
+        @Query('offset') offset?: number,
+        @Query('limit') limit?: number,
+    ) {
+        return this.exercisesService.getAllExercises(offset, limit);
+    }
+
     @Get('target/:target')
     async getByTarget(@Param('target') target: string) {
         return this.exercisesService.getExercisesByTarget(target);
@@ -45,14 +53,6 @@ export class ExercisesController {
     @Get('equipment/:equipment')
     async getByEquipment(@Param('equipment') equipment: string) {
         return this.exercisesService.getExercisesByEquipment(equipment);
-    }
-
-    @Get()
-    async getAllExercises(
-        @Query('offset') offset?: number,
-        @Query('limit') limit?: number,
-    ) {
-        return this.exercisesService.getAllExercises(offset, limit);
     }
 
     @Get(':id')
