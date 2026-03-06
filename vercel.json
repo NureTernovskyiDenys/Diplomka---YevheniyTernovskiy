@@ -30,11 +30,12 @@
             "dest": "/api/index.py"
         },
         {
-            "handle": "filesystem"
+            "src": "/(.*\\..*)",
+            "dest": "frontend/dist/$1"
         },
         {
             "src": "/(.*)",
-            "dest": "/index.html"
+            "dest": "frontend/dist/index.html"
         }
     ]
 }
