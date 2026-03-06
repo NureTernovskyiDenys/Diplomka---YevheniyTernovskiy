@@ -89,45 +89,70 @@ export default function Dashboard() {
     const [availableEquipment, setAvailableEquipment] = useState([]);
     const [allEquipments, setAllEquipments] = useState([]);
     const [ownedEquipments, setOwnedEquipments] = useState([]);
+    const [targetMode, setTargetMode] = useState('simplified');
+    const [targetOptions, setTargetOptions] = useState([]);
+    const [showResults, setShowResults] = useState(false);
 
     useEffect(() => {
-        if (!activeMuscle) return;
+        setShowResults(false);
+    }, [activeMuscle, ownedEquipments]);
 
-        const fetchExercises = async () => {
-            setLoading(true);
-            setExercises([]);
-            setSelectedEquipment(null);
+    useEffect(() => {
+        const fetchTargets = async () => {
+            const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+            const endpoint = targetMode === 'simplified' ? '/api/nest/exercises/bodyparts' : '/api/nest/exercises/muscles';
             try {
-                // Determine base URL dynamically depending on dev or prod
-                const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-                const response = await fetch(`${baseUrl}/api/nest/exercises/filter?muscles=${activeMuscle}`);
-                if (!response.ok) throw new Error('Failed to fetch exercises');
-
-                const data = await response.json();
-                setExercises(data);
-
-                // Extract all unique equipments from the returned exercises
-                const equipments = new Set();
-                data.forEach(ex => {
-                    if (ex.equipments && Array.isArray(ex.equipments)) {
-                        ex.equipments.forEach(eq => equipments.add(eq));
-                    } else if (ex.equipment && typeof ex.equipment === 'string') {
-                        equipments.add(ex.equipment);
-                    }
-                });
-                setAvailableEquipment(Array.from(equipments).sort());
-
-            } catch (error) {
-                console.error("Error fetching exercises:", error);
-                setExercises([]);
-                setAvailableEquipment([]);
-            } finally {
-                setLoading(false);
+                const response = await fetch(`${baseUrl}${endpoint}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) setTargetOptions(data);
+                    else if (data && Array.isArray(data.data)) setTargetOptions(data.data);
+                }
+            } catch (e) {
+                console.error("Error fetching targets:", e);
             }
         };
+        fetchTargets();
+    }, [targetMode]);
 
-        fetchExercises();
-    }, [activeMuscle]);
+    const handleSearch = async () => {
+        setLoading(true);
+        setShowResults(true);
+        setExercises([]);
+        setSelectedEquipment(null);
+
+        const terms = [];
+        if (activeMuscle) terms.push(activeMuscle);
+        if (ownedEquipments.length > 0) terms.push(...ownedEquipments);
+
+        const qVal = terms.join('+');
+
+        try {
+            const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+            const response = await fetch(`${baseUrl}/api/nest/exercises/search?q=${encodeURIComponent(qVal)}&limit=50`);
+            if (!response.ok) throw new Error('Failed to fetch exercises');
+
+            const data = await response.json();
+            const results = Array.isArray(data) ? data : (data?.data || []);
+            setExercises(results);
+
+            const equipments = new Set();
+            results.forEach(ex => {
+                if (ex.equipments && Array.isArray(ex.equipments)) {
+                    ex.equipments.forEach(eq => equipments.add(eq));
+                } else if (ex.equipment && typeof ex.equipment === 'string') {
+                    equipments.add(ex.equipment);
+                }
+            });
+            setAvailableEquipment(Array.from(equipments).sort());
+        } catch (error) {
+            console.error("Error fetching exercises:", error);
+            setExercises([]);
+            setAvailableEquipment([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Fetch all available equipments on mount
     useEffect(() => {
@@ -256,16 +281,49 @@ export default function Dashboard() {
                     </div>
 
                     {/* Center Panel: Interactive Map */}
-                    <div className="lg:col-span-4 order-1 lg:order-2 flex justify-center">
+                    <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center">
+                        {/* Mode Switch */}
+                        <div className="w-full max-w-sm bg-zinc-900/40 rounded-2xl border border-zinc-800/50 p-2 mb-6 flex relative">
+                            <div className={`absolute inset-y-2 w-[calc(50%-8px)] bg-zinc-800 rounded-xl transition-all duration-300 ease-out z-0 ${targetMode === 'simplified' ? 'left-2' : 'left-[calc(50%+4px)]'}`} />
+                            <button
+                                onClick={() => setTargetMode('simplified')}
+                                className={`relative z-10 flex-1 py-2 text-sm font-bold transition-colors ${targetMode === 'simplified' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                Simplified
+                            </button>
+                            <button
+                                onClick={() => setTargetMode('full')}
+                                className={`relative z-10 flex-1 py-2 text-sm font-bold transition-colors ${targetMode === 'full' ? 'text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                Full
+                            </button>
+                        </div>
+
                         <CyberBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} />
+
+                        {/* Body Parts / Muscles List */}
+                        <div className="w-full mt-6 flex flex-wrap gap-2 justify-center max-h-[180px] overflow-y-auto custom-scrollbar p-2">
+                            {targetOptions.map(opt => {
+                                const optName = typeof opt === 'string' ? opt : (opt?.name || 'Unknown');
+                                return (
+                                    <button
+                                        key={optName}
+                                        onClick={() => setActiveMuscle(activeMuscle === optName ? null : optName)}
+                                        className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all capitalize ${activeMuscle === optName ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-zinc-800/40 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                                    >
+                                        {optName}
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
 
                     {/* Right Panel: Selected Muscle Info */}
                     <div className="lg:col-span-4 order-3 flex flex-col gap-6">
                         <AnimatePresence mode="popLayout">
-                            {activeMuscle ? (
+                            {showResults ? (
                                 <motion.div
-                                    key={activeMuscle}
+                                    key="results"
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
@@ -274,10 +332,10 @@ export default function Dashboard() {
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h2 className="text-3xl font-black mb-1 capitalize text-white">
-                                                {MUSCLE_GROUPS.find(m => m.id === activeMuscle)?.name || activeMuscle}
+                                                {MUSCLE_GROUPS.find(m => m.id === activeMuscle)?.name || activeMuscle || 'Custom Search'}
                                             </h2>
                                             <p className="text-cyan-400 text-sm font-medium mb-4">
-                                                {MUSCLE_GROUPS.find(m => m.id === activeMuscle)?.category || 'General'} Group
+                                                {activeMuscle ? (MUSCLE_GROUPS.find(m => m.id === activeMuscle)?.category || 'Targeted') : 'Equipment Based'}
                                             </p>
 
                                             {/* Equipment Filters */}
@@ -369,16 +427,41 @@ export default function Dashboard() {
                                         </button>
                                     </div>
                                 </motion.div>
+                            ) : (activeMuscle || ownedEquipments.length > 0) ? (
+                                <motion.div
+                                    key="ready"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    className="bg-zinc-900/20 border border-cyan-500/30 border-dashed rounded-2xl p-12 text-center h-full flex flex-col items-center justify-center gap-6 text-zinc-500"
+                                >
+                                    <div className="flex flex-wrap gap-3 justify-center">
+                                        {activeMuscle && <span className="px-4 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-semibold capitalize border border-indigo-500/50">Target: {activeMuscle}</span>}
+                                        {ownedEquipments.length > 0 && <span className="px-4 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-full text-sm font-semibold border border-cyan-500/50">Equipments: {ownedEquipments.length}</span>}
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white">Ready to Search</h3>
+                                    <p className="text-sm max-w-[300px] text-zinc-400">
+                                        Click below to find exercises matching your selected constraints.
+                                    </p>
+                                    <button
+                                        onClick={handleSearch}
+                                        className="mt-4 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-black rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all flex items-center gap-3"
+                                    >
+                                        Find Workouts <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                </motion.div>
                             ) : (
                                 <motion.div
+                                    key="empty"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
                                     className="bg-zinc-900/20 border border-zinc-800/50 border-dashed rounded-2xl p-12 text-center h-full flex flex-col items-center justify-center gap-4 text-zinc-500"
                                 >
                                     <Target className="w-12 h-12 opacity-50 mb-2" />
-                                    <h3 className="text-xl font-semibold text-zinc-400">No Muscle Selected</h3>
+                                    <h3 className="text-xl font-semibold text-zinc-400">No Target Selected</h3>
                                     <p className="text-sm max-w-[250px]">
-                                        Click a muscle group on the interactive tech map or choose from the directory to start building your workout.
+                                        Click a muscle group, choose a body part, or select equipment to start building your workout.
                                     </p>
                                 </motion.div>
                             )}
