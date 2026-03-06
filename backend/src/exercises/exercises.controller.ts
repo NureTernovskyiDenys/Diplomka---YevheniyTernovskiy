@@ -1,11 +1,41 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ExercisesService } from './exercises.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('exercises')
-@UseGuards(JwtAuthGuard)
 export class ExercisesController {
     constructor(private readonly exercisesService: ExercisesService) { }
+
+    @Get('filter')
+    async getFiltered(
+        @Query('muscles') muscles?: string,
+        @Query('equipment') equipment?: string,
+    ) {
+        return this.exercisesService.getExercisesByFilter(muscles, equipment);
+    }
+
+    @Get('search')
+    async searchExercises(
+        @Query('q') q: string,
+        @Query('offset') offset?: number,
+        @Query('limit') limit?: number,
+    ) {
+        return this.exercisesService.searchExercises(q, offset, limit);
+    }
+
+    @Get('muscles')
+    async getMuscles() {
+        return this.exercisesService.getMuscles();
+    }
+
+    @Get('bodyparts')
+    async getBodyParts() {
+        return this.exercisesService.getBodyParts();
+    }
+
+    @Get('equipments')
+    async getEquipments() {
+        return this.exercisesService.getEquipments();
+    }
 
     @Get('target/:target')
     async getByTarget(@Param('target') target: string) {
@@ -15,5 +45,18 @@ export class ExercisesController {
     @Get('equipment/:equipment')
     async getByEquipment(@Param('equipment') equipment: string) {
         return this.exercisesService.getExercisesByEquipment(equipment);
+    }
+
+    @Get()
+    async getAllExercises(
+        @Query('offset') offset?: number,
+        @Query('limit') limit?: number,
+    ) {
+        return this.exercisesService.getAllExercises(offset, limit);
+    }
+
+    @Get(':id')
+    async getExerciseById(@Param('id') id: string) {
+        return this.exercisesService.getExerciseById(id);
     }
 }

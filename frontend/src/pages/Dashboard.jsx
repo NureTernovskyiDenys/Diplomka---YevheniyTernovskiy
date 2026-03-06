@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import CardNav from '../components/CardNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Dumbbell, Activity, Target, Loader2, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import { ChevronRight, Dumbbell, Activity, Target } from 'lucide-react';
 
-// ... (MUSCLE_GROUPS and CyberBodyMap remain identical)
 const MUSCLE_GROUPS = [
     { id: 'chest', name: 'Chest', category: 'Upper Body' },
     { id: 'back', name: 'Back', category: 'Upper Body' },
@@ -81,62 +79,55 @@ function CyberBodyMap({ activeMuscle, setActiveMuscle }) {
 
 export default function Dashboard() {
     const [activeMuscle, setActiveMuscle] = useState(null);
-    const [view, setView] = useState('front');
+    const [view, setView] = useState('front'); // 'front' | 'back'
     const [gender, setGender] = useState('male');
 
-    // Data fetching state
+    // Exercise Data State
     const [exercises, setExercises] = useState([]);
-    const [loadingExercises, setLoadingExercises] = useState(false);
-    const [error, setError] = useState(null);
-
-    // Filtering state
-    const [availableEquipment, setAvailableEquipment] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [selectedEquipment, setSelectedEquipment] = useState(null);
+    const [availableEquipment, setAvailableEquipment] = useState([]);
 
-    // Fetch exercises when activeMuscle changes
     useEffect(() => {
         if (!activeMuscle) return;
 
         const fetchExercises = async () => {
-            setLoadingExercises(true);
-            setError(null);
-            setSelectedEquipment(null); // Reset filter on new muscle
+            setLoading(true);
+            setExercises([]);
+            setSelectedEquipment(null);
             try {
-                // Map local 'core' to the RapidAPI 'abs' endpoint structure if needed, or leave as is if backend handles mapping.
-                // Assuming backend expects the exact RapidAPI muscle names. We align them in the backend but sending the raw activeMuscle ID.
-                const targetId = activeMuscle === 'core' ? 'abs' : activeMuscle;
+                // Determine base URL dynamically depending on dev or prod
+                const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+                const response = await fetch(`${baseUrl}/api/nest/exercises/filter?muscles=${activeMuscle}`);
+                if (!response.ok) throw new Error('Failed to fetch exercises');
 
-                // Get JWT token
-                const token = localStorage.getItem('token');
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const data = await response.json();
+                setExercises(data);
 
-                const res = await axios.get(`/api/nest/exercises/target/${targetId}`, { headers });
-
-                // RapidAPI often returns a large array, let's take up to 20 for the UI to be snappy
-                const fetchedExercises = Array.isArray(res.data) ? res.data.slice(0, 20) : [];
-                setExercises(fetchedExercises);
-
-                // Extract unique equipment types from the response
-                const equipmentSet = new Set();
-                fetchedExercises.forEach(ex => {
-                    if (ex.equipment) equipmentSet.add(ex.equipment);
+                // Extract all unique equipments from the returned exercises
+                const equipments = new Set();
+                data.forEach(ex => {
+                    if (ex.equipments && Array.isArray(ex.equipments)) {
+                        ex.equipments.forEach(eq => equipments.add(eq));
+                    }
                 });
-                setAvailableEquipment(Array.from(equipmentSet).sort());
+                setAvailableEquipment(Array.from(equipments).sort());
 
-            } catch (err) {
-                console.error("Failed to fetch exercises:", err);
-                setError(err.response?.data?.message || err.message || "Could not load exercises");
+            } catch (error) {
+                console.error("Error fetching exercises:", error);
+                setExercises([]);
+                setAvailableEquipment([]);
             } finally {
-                setLoadingExercises(false);
+                setLoading(false);
             }
         };
 
         fetchExercises();
     }, [activeMuscle]);
 
-    // Filtered exercises based on selected equipment
+    // Local filter for selected equipment
     const filteredExercises = selectedEquipment
-        ? exercises.filter(ex => ex.equipment === selectedEquipment)
+        ? exercises.filter(ex => ex.equipments?.includes(selectedEquipment))
         : exercises;
 
     return (
@@ -237,7 +228,7 @@ export default function Dashboard() {
                         <CyberBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} />
                     </div>
 
-                    {/* Right Panel: Selected Muscle Info & Filters */}
+                    {/* Right Panel: Selected Muscle Info */}
                     <div className="lg:col-span-4 order-3 flex flex-col gap-6">
                         <AnimatePresence mode="popLayout">
                             {activeMuscle ? (
@@ -246,96 +237,98 @@ export default function Dashboard() {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
-                                    className="bg-zinc-900/50 border border-cyan-500/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(34,211,238,0.05)] backdrop-blur-md flex flex-col h-[500px]"
+                                    className="bg-zinc-900/50 border border-cyan-500/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(34,211,238,0.05)] backdrop-blur-md"
                                 >
-                                    <div className="flex justify-between items-start mb-4">
+                                    <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h2 className="text-3xl font-black mb-1 capitalize text-white">
                                                 {MUSCLE_GROUPS.find(m => m.id === activeMuscle)?.name || activeMuscle}
                                             </h2>
-                                            <p className="text-cyan-400 text-sm font-medium mb-3">
+                                            <p className="text-cyan-400 text-sm font-medium mb-4">
                                                 {MUSCLE_GROUPS.find(m => m.id === activeMuscle)?.category || 'General'} Group
                                             </p>
-                                        </div>
-                                        <div className="p-3 bg-zinc-800/50 rounded-xl border border-zinc-700">
-                                            <Target className="w-6 h-6 text-cyan-400" />
+
+                                            {/* Equipment Filters */}
+                                            {availableEquipment.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    <button
+                                                        onClick={() => setSelectedEquipment(null)}
+                                                        className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${selectedEquipment === null
+                                                                ? 'bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
+                                                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'
+                                                            }`}
+                                                    >
+                                                        All
+                                                    </button>
+                                                    {availableEquipment.map(eq => (
+                                                        <button
+                                                            key={eq}
+                                                            onClick={() => setSelectedEquipment(eq)}
+                                                            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all capitalize ${selectedEquipment === eq
+                                                                    ? 'bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
+                                                                    : 'bg-zinc-800/50 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'
+                                                                }`}
+                                                        >
+                                                            {eq}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Equipment Filters */}
-                                    {availableEquipment.length > 0 && !loadingExercises && (
-                                        <div className="mb-4">
-                                            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Filter by Equipment</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    onClick={() => setSelectedEquipment(null)}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${!selectedEquipment
-                                                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50'
-                                                            : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50 hover:bg-zinc-800 hover:text-zinc-200'
-                                                        }`}
-                                                >
-                                                    All
-                                                </button>
-                                                {availableEquipment.map(eq => (
-                                                    <button
-                                                        key={eq}
-                                                        onClick={() => setSelectedEquipment(eq)}
-                                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${selectedEquipment === eq
-                                                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
-                                                                : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50 hover:bg-zinc-800 hover:text-zinc-200'
-                                                            }`}
-                                                    >
-                                                        {eq.replace('_', ' ')}
-                                                    </button>
-                                                ))}
+                                    <div className="space-y-4">
+                                        <div className="bg-zinc-950/50 rounded-xl p-4 border border-zinc-800/50 min-h-[300px] flex flex-col">
+                                            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                                                <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                                                    {selectedEquipment ? `${selectedEquipment} Exercises` : 'All Exercises'}
+                                                </h4>
+                                                <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md font-mono">{filteredExercises.length}</span>
                                             </div>
-                                        </div>
-                                    )}
 
-                                    {/* Exercises List (Scrollable Segment) */}
-                                    <div className="space-y-4 flex-grow overflow-hidden flex flex-col">
-                                        <div className="bg-zinc-950/50 rounded-xl p-4 border border-zinc-800/50 flex-grow overflow-y-auto custom-scrollbar">
-
-                                            {loadingExercises ? (
-                                                <div className="flex flex-col items-center justify-center h-full text-zinc-500 space-y-3">
-                                                    <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
-                                                    <p className="text-sm font-medium">Fetching exercise data...</p>
-                                                </div>
-                                            ) : error ? (
-                                                <div className="flex flex-col items-center justify-center h-full text-red-400 space-y-2 text-center p-4">
-                                                    <AlertCircle className="w-8 h-8" />
-                                                    <p className="text-sm font-medium">{error}</p>
-                                                    <button onClick={() => setActiveMuscle(activeMuscle)} className="text-xs text-red-300 underline mt-2">Try Again</button>
-                                                </div>
-                                            ) : filteredExercises.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center h-full text-zinc-500">
-                                                    <p className="text-sm">No exercises found for this configuration.</p>
-                                                </div>
-                                            ) : (
-                                                <ul className="space-y-3">
-                                                    {filteredExercises.map((ex, index) => (
-                                                        <li key={`${ex.id}-${index}`} className="flex items-start gap-3 text-zinc-200 bg-zinc-900/40 p-3 rounded-lg border border-zinc-800/50 hover:border-cyan-500/30 transition-colors group cursor-pointer">
-                                                            {/* Small thumbnail if available, otherwise a dot */}
-                                                            {ex.gifUrl ? (
-                                                                <img src={ex.gifUrl} alt={ex.name} className="w-12 h-12 rounded object-cover bg-zinc-800 border border-zinc-700" loading="lazy" />
-                                                            ) : (
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 mt-2 flex-shrink-0" />
-                                                            )}
-
-                                                            <div className="flex flex-col">
-                                                                <span className="font-semibold text-sm capitalize group-hover:text-cyan-400 transition-colors leading-tight">{ex.name}</span>
-                                                                <div className="flex gap-2 mt-1">
-                                                                    <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded uppercase font-bold capitalize">{ex.equipment}</span>
+                                            {/* Scrollable Exercise List */}
+                                            <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 relative">
+                                                {loading ? (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-cyan-500 gap-3">
+                                                        <Loader2 className="w-8 h-8 animate-spin" />
+                                                        <span className="text-sm font-medium animate-pulse">Syncing Database...</span>
+                                                    </div>
+                                                ) : filteredExercises.length > 0 ? (
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {filteredExercises.map(ex => (
+                                                            <div key={ex.exerciseId} className="group relative flex gap-4 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-800/80 transition-all cursor-pointer overflow-hidden">
+                                                                <div className="w-20 h-20 rounded-lg bg-zinc-950 flex-shrink-0 overflow-hidden border border-zinc-800/50">
+                                                                    {ex.gifUrl ? (
+                                                                        <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity mix-blend-screen" loading="lazy" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center text-zinc-700"><Dumbbell className="w-6 h-6" /></div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex flex-col justify-center min-w-0 flex-1">
+                                                                    <h5 className="font-bold text-zinc-100 capitalize truncate group-hover:text-cyan-400 transition-colors mb-1">
+                                                                        {ex.name}
+                                                                    </h5>
+                                                                    <div className="flex flex-wrap gap-1.5 mt-auto">
+                                                                        {ex.equipments?.slice(0, 2).map((eq, i) => (
+                                                                            <span key={i} className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md border border-zinc-700/50 capitalize whitespace-nowrap">
+                                                                                {eq}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center px-4">
+                                                        <Dumbbell className="w-10 h-10 opacity-20 mb-3" />
+                                                        <p className="text-sm">No exercises found for this combination.</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        <button className="w-full py-3 mt-4 flex-shrink-0 bg-transparent text-cyan-400 font-semibold rounded-xl border border-cyan-900/50 hover:bg-cyan-950/30 transition-colors flex items-center justify-center gap-2 relative overflow-hidden group">
-                                            <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-cyan-400 to-indigo-500 group-hover:h-full transition-all duration-300 opacity-20 -z-10" />
+                                        <button className="w-full py-3 bg-transparent text-cyan-400 font-semibold rounded-xl border border-cyan-900/50 hover:bg-cyan-950/30 transition-colors flex items-center justify-center gap-2">
                                             Start Live AI Analysis
                                             <Activity className="w-4 h-4" />
                                         </button>
@@ -345,7 +338,7 @@ export default function Dashboard() {
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="bg-zinc-900/20 border border-zinc-800/50 border-dashed rounded-2xl p-12 text-center h-[500px] flex flex-col items-center justify-center gap-4 text-zinc-500"
+                                    className="bg-zinc-900/20 border border-zinc-800/50 border-dashed rounded-2xl p-12 text-center h-full flex flex-col items-center justify-center gap-4 text-zinc-500"
                                 >
                                     <Target className="w-12 h-12 opacity-50 mb-2" />
                                     <h3 className="text-xl font-semibold text-zinc-400">No Muscle Selected</h3>
