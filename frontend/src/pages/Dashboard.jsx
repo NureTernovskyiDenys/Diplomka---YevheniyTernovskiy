@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CardNav from '../components/CardNav';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Dumbbell, Activity, Target, Loader2 } from 'lucide-react';
+import Model from 'react-body-highlighter';
 
 const MUSCLE_GROUPS = [
     { id: 'chest', name: 'Chest', category: 'Upper Body' },
@@ -16,63 +17,95 @@ const MUSCLE_GROUPS = [
     { id: 'glutes', name: 'Glutes', category: 'Lower Body' },
     { id: 'calves', name: 'Calves', category: 'Lower Body' },
 ];
+// SLUG -> API MUSCLE 
+const MUSCLE_MAPPING = {
+    'chest': 'pectorals',
+    'abs': 'abs',
+    'obliques': 'abs',
+    'front-deltoids': 'delts',
+    'back-deltoids': 'delts',
+    'biceps': 'biceps',
+    'triceps': 'triceps',
+    'forearm': 'forearms',
+    'upper-back': 'upper back',
+    'lower-back': 'spine',
+    'trapezius': 'traps',
+    'gluteal': 'glutes',
+    'quadriceps': 'quads',
+    'hamstring': 'hamstrings',
+    'adductor': 'adductors',
+    'abductors': 'abductors',
+    'calves': 'calves',
+    'head': 'neck',
+    'neck': 'neck'
+};
 
-function CyberBodyMap({ activeMuscle, setActiveMuscle }) {
-    // A stylized, glowing blocky representation of a body
-    const parts = [
-        { id: 'shoulders', label: 'Shoulders', classes: 'top-[15%] left-[25%] w-[50%] h-[10%]' },
-        { id: 'chest', label: 'Chest', classes: 'top-[26%] left-[30%] w-[40%] h-[15%]' },
-        { id: 'biceps', label: 'Biceps', classes: 'top-[30%] left-[15%] w-[12%] h-[15%]', mirror: 'left-[73%]' },
-        { id: 'core', label: 'Core', classes: 'top-[42%] left-[35%] w-[30%] h-[15%]' },
-        { id: 'forearms', label: 'Forearms', classes: 'top-[48%] left-[10%] w-[10%] h-[15%]', mirror: 'left-[80%]' },
-        { id: 'quads', label: 'Quads', classes: 'top-[60%] left-[30%] w-[18%] h-[20%]', mirror: 'left-[52%]' },
-        { id: 'calves', label: 'Calves', classes: 'top-[82%] left-[32%] w-[14%] h-[15%]', mirror: 'left-[54%]' },
-    ];
+// SLUG -> API BODY PART
+const BODYPART_MAPPING = {
+    'chest': 'chest',
+    'abs': 'waist',
+    'obliques': 'waist',
+    'front-deltoids': 'shoulders',
+    'back-deltoids': 'shoulders',
+    'biceps': 'upper arms',
+    'triceps': 'upper arms',
+    'forearm': 'lower arms',
+    'upper-back': 'back',
+    'lower-back': 'back',
+    'trapezius': 'back',
+    'gluteal': 'upper legs',
+    'quadriceps': 'upper legs',
+    'hamstring': 'upper legs',
+    'adductor': 'upper legs',
+    'abductors': 'upper legs',
+    'calves': 'lower legs',
+    'head': 'neck',
+    'neck': 'neck'
+};
+
+function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
+    // Determine which slugs should be highlighted based on the active API target
+    const getHighlightedMuscles = () => {
+        if (!activeMuscle) return [];
+        const map = mode === 'full' ? MUSCLE_MAPPING : BODYPART_MAPPING;
+        // Find all slugs that map to the active target
+        const slugs = Object.keys(map).filter(k => map[k] === activeMuscle);
+        return slugs;
+    };
+
+    const highlighted = getHighlightedMuscles();
+    const data = highlighted.length > 0 ? [{ name: 'Target', muscles: highlighted }] : [];
+
+    const handleClick = ({ muscle }) => {
+        const map = mode === 'full' ? MUSCLE_MAPPING : BODYPART_MAPPING;
+        const apiTarget = map[muscle];
+        if (apiTarget) setActiveMuscle(activeMuscle === apiTarget ? null : apiTarget);
+    };
 
     return (
-        <div className="relative w-full max-w-sm aspect-[1/2] mx-auto bg-zinc-900/40 rounded-3xl border border-zinc-800/50 p-4 shadow-2xl backdrop-blur-sm overflow-hidden flex items-center justify-center">
-            {/* Background Glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-indigo-500/5 z-0" />
-
-            {/* The "Body" container */}
-            <div className="relative w-full h-full z-10">
-                {/* Head (Non-interactive) */}
-                <div className="absolute top-[2%] left-[40%] w-[20%] h-[12%] bg-zinc-800 rounded-full border border-zinc-700" />
-
-                {parts.map(part => (
-                    <React.Fragment key={part.id}>
-                        <motion.button
-                            onClick={() => setActiveMuscle(part.id)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={`absolute rounded-xl border transition-all duration-300 flex items-center justify-center ${part.classes} ${activeMuscle === part.id
-                                ? 'bg-cyan-500/40 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] z-20'
-                                : 'bg-zinc-800/80 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 z-10'
-                                }`}
-                        >
-                            <span className="text-[10px] font-bold text-white/50 opacity-0 md:opacity-100">{part.label}</span>
-                        </motion.button>
-
-                        {/* Mirrored part for symmetry (arms, legs) */}
-                        {part.mirror && (
-                            <motion.button
-                                onClick={() => setActiveMuscle(part.id)}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className={`absolute rounded-xl border transition-all duration-300 flex items-center justify-center ${part.classes.replace(/left-\[\d+%\]/, part.mirror)} ${activeMuscle === part.id
-                                    ? 'bg-cyan-500/40 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] z-20'
-                                    : 'bg-zinc-800/80 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 z-10'
-                                    }`}
-                            >
-                                <span className="text-[10px] font-bold text-white/50 opacity-0 md:opacity-100">{part.label}</span>
-                            </motion.button>
-                        )}
-                    </React.Fragment>
-                ))}
+        <div className="flex flex-row items-center justify-center gap-4 w-full h-[450px]">
+            <div className="h-full bg-zinc-900/30 rounded-2xl border border-zinc-800/50 p-4 drop-shadow-2xl overflow-hidden flex items-center">
+                <Model
+                    type="anterior"
+                    gender={gender}
+                    data={data}
+                    style={{ height: '350px', cursor: 'pointer' }}
+                    onClick={handleClick}
+                    highlightedColors={['#06b6d4']} // cyan-500
+                    bodyColor="#27272a"
+                />
             </div>
-
-            {/* Scanline effect */}
-            <div className="absolute inset-0 pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSJyZ2JhKDAsMCwwLDApIiAvPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiAvPgo8L3N2Zz4=')] opacity-50 z-30" />
+            <div className="h-full bg-zinc-900/30 rounded-2xl border border-zinc-800/50 p-4 drop-shadow-2xl overflow-hidden flex items-center">
+                <Model
+                    type="posterior"
+                    gender={gender}
+                    data={data}
+                    style={{ height: '350px', cursor: 'pointer' }}
+                    onClick={handleClick}
+                    highlightedColors={['#06b6d4']} // cyan-500
+                    bodyColor="#27272a"
+                />
+            </div>
         </div>
     );
 }
@@ -282,40 +315,49 @@ export default function Dashboard() {
 
                     {/* Center Panel: Interactive Map */}
                     <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center">
-                        {/* Mode Switch */}
-                        <div className="w-full max-w-sm bg-zinc-900/40 rounded-2xl border border-zinc-800/50 p-2 mb-6 flex relative">
-                            <div className={`absolute inset-y-2 w-[calc(50%-8px)] bg-zinc-800 rounded-xl transition-all duration-300 ease-out z-0 ${targetMode === 'simplified' ? 'left-2' : 'left-[calc(50%+4px)]'}`} />
-                            <button
-                                onClick={() => setTargetMode('simplified')}
-                                className={`relative z-10 flex-1 py-2 text-sm font-bold transition-colors ${targetMode === 'simplified' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                                Simplified
-                            </button>
-                            <button
-                                onClick={() => setTargetMode('full')}
-                                className={`relative z-10 flex-1 py-2 text-sm font-bold transition-colors ${targetMode === 'full' ? 'text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                                Full
-                            </button>
+                        <div className="flex w-full items-center justify-between mb-4 px-2">
+                            {/* Gender Switch */}
+                            <div className="bg-zinc-900/60 rounded-xl p-1 flex relative border border-zinc-800/50 shadow-inner">
+                                <div className={`absolute inset-y-1 w-[calc(50%-4px)] bg-zinc-800 rounded-xl transition-all duration-300 ease-out z-0 ${gender === 'male' ? 'left-1' : 'left-[calc(50%+2px)]'}`} />
+                                <button
+                                    onClick={() => setGender('male')}
+                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${gender === 'male' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    Male
+                                </button>
+                                <button
+                                    onClick={() => setGender('female')}
+                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${gender === 'female' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    Female
+                                </button>
+                            </div>
+
+                            {/* Mode Switch */}
+                            <div className="bg-zinc-900/60 rounded-xl p-1 flex relative border border-zinc-800/50 shadow-inner">
+                                <div className={`absolute inset-y-1 w-[calc(50%-4px)] bg-zinc-800 rounded-xl transition-all duration-300 ease-out z-0 ${targetMode === 'simplified' ? 'left-1' : 'left-[calc(50%+2px)]'}`} />
+                                <button
+                                    onClick={() => {
+                                        setTargetMode('simplified');
+                                        setActiveMuscle(null);
+                                    }}
+                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${targetMode === 'simplified' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    Simplified
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setTargetMode('full');
+                                        setActiveMuscle(null);
+                                    }}
+                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${targetMode === 'full' ? 'text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    Full
+                                </button>
+                            </div>
                         </div>
 
-                        <CyberBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} />
-
-                        {/* Body Parts / Muscles List */}
-                        <div className="w-full mt-6 flex flex-wrap gap-2 justify-center max-h-[180px] overflow-y-auto custom-scrollbar p-2">
-                            {targetOptions.map(opt => {
-                                const optName = typeof opt === 'string' ? opt : (opt?.name || 'Unknown');
-                                return (
-                                    <button
-                                        key={optName}
-                                        onClick={() => setActiveMuscle(activeMuscle === optName ? null : optName)}
-                                        className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all capitalize ${activeMuscle === optName ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-zinc-800/40 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
-                                    >
-                                        {optName}
-                                    </button>
-                                )
-                            })}
-                        </div>
+                        <DualBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} mode={targetMode} gender={gender} />
                     </div>
 
                     {/* Right Panel: Selected Muscle Info */}
