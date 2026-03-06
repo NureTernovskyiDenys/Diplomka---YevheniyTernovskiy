@@ -14,6 +14,11 @@
             "key": "token",
             "value": "YOUR_JWT_TOKEN_HERE",
             "type": "string"
+        },
+        {
+            "key": "live_url",
+            "value": "http://localhost:8000",
+            "type": "string"
         }
     ],
     "item": [
@@ -581,18 +586,137 @@
             "name": "Exercises",
             "item": [
                 {
-                    "name": "Get Exercises by Target Muscle",
+                    "name": "Search Exercises",
                     "request": {
-                        "auth": {
-                            "type": "bearer",
-                            "bearer": [
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/search?q=bench&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "search"
+                            ],
+                            "query": [
                                 {
-                                    "key": "token",
-                                    "value": "{{token}}",
-                                    "type": "string"
+                                    "key": "q",
+                                    "value": "bench"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
                                 }
                             ]
-                        },
+                        }
+                    }
+                },
+                {
+                    "name": "Get All Exercises",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises?limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Filter Exercises",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/filter?muscles=chest&equipment=barbell",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "filter"
+                            ],
+                            "query": [
+                                {
+                                    "key": "muscles",
+                                    "value": "chest"
+                                },
+                                {
+                                    "key": "equipment",
+                                    "value": "barbell"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Exercise By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/1234",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "1234"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Exercises by Body Part",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/target/back",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "target",
+                                "back"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Exercises by Equipment",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/equipment/dumbbell",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "equipment",
+                                "dumbbell"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Exercises by Specific Muscle (using target mapped to target)",
+                    "request": {
                         "method": "GET",
                         "header": [],
                         "url": {
@@ -609,29 +733,52 @@
                     }
                 },
                 {
-                    "name": "Get Exercises by Equipment",
+                    "name": "List Body Parts",
                     "request": {
-                        "auth": {
-                            "type": "bearer",
-                            "bearer": [
-                                {
-                                    "key": "token",
-                                    "value": "{{token}}",
-                                    "type": "string"
-                                }
-                            ]
-                        },
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{base_url}}/exercises/equipment/barbell",
+                            "raw": "{{base_url}}/exercises/bodyparts",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
                                 "exercises",
-                                "equipment",
-                                "barbell"
+                                "bodyparts"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Muscles",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/muscles",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "muscles"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Equipments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/exercises/equipments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "exercises",
+                                "equipments"
                             ]
                         }
                     }
