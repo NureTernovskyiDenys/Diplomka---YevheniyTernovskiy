@@ -137,7 +137,17 @@ export default function Dashboard() {
                 const response = await fetch(`${baseUrl}/api/nest/exercises/equipments`);
                 if (response.ok) {
                     const data = await response.json();
-                    setAllEquipments(data);
+                    if (Array.isArray(data)) {
+                        setAllEquipments(data);
+                    } else if (data && Array.isArray(data.data)) {
+                        setAllEquipments(data.data);
+                    } else {
+                        console.error("Equipments API returned non-array data:", data);
+                        setAllEquipments([]);
+                    }
+                } else {
+                    console.error("Equipments API failed with status:", response.status);
+                    setAllEquipments([]);
                 }
             } catch (error) {
                 console.error("Error fetching available equipments:", error);
@@ -211,31 +221,35 @@ export default function Dashboard() {
                                 {allEquipments.length === 0 ? (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 gap-2">
                                         <Loader2 className="w-5 h-5 animate-spin opacity-50" />
-                                        <span className="text-xs">Loading...</span>
+                                        <span className="text-xs">Loading items...</span>
                                     </div>
-                                ) : (
-                                    allEquipments.map((eq) => (
-                                        <button
-                                            key={eq}
-                                            onClick={() => {
-                                                if (ownedEquipments.includes(eq)) {
-                                                    setOwnedEquipments(ownedEquipments.filter(e => e !== eq));
-                                                } else {
-                                                    setOwnedEquipments([...ownedEquipments, eq]);
-                                                }
-                                            }}
-                                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${ownedEquipments.includes(eq)
-                                                ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-50'
-                                                : 'bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white'
-                                                }`}
-                                        >
-                                            <span className="font-semibold capitalize text-sm">{eq}</span>
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${ownedEquipments.includes(eq) ? 'border-cyan-400 bg-cyan-400' : 'border-zinc-600'}`}>
-                                                {ownedEquipments.includes(eq) && <div className="w-2 h-2 bg-zinc-900 rounded-full" />}
-                                            </div>
-                                        </button>
-                                    ))
-                                )}
+                                ) : Array.isArray(allEquipments) ? (
+                                    allEquipments.map((eq) => {
+                                        // Ensure eq is a primitive string to avoid React rendering errors with Objects
+                                        const eqName = typeof eq === 'string' ? eq : (eq?.name || 'Unknown');
+                                        return (
+                                            <button
+                                                key={eqName}
+                                                onClick={() => {
+                                                    if (ownedEquipments.includes(eqName)) {
+                                                        setOwnedEquipments(ownedEquipments.filter(e => e !== eqName));
+                                                    } else {
+                                                        setOwnedEquipments([...ownedEquipments, eqName]);
+                                                    }
+                                                }}
+                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${ownedEquipments.includes(eqName)
+                                                    ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-50'
+                                                    : 'bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white'
+                                                    }`}
+                                            >
+                                                <span className="font-semibold capitalize text-sm">{eqName}</span>
+                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${ownedEquipments.includes(eqName) ? 'border-cyan-400 bg-cyan-400' : 'border-zinc-600'}`}>
+                                                    {ownedEquipments.includes(eqName) && <div className="w-2 h-2 bg-zinc-900 rounded-full" />}
+                                                </div>
+                                            </button>
+                                        )
+                                    })
+                                ) : null}
                             </div>
                         </div>
 
