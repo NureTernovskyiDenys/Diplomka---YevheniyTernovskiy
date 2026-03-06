@@ -29,15 +29,19 @@ import { AnalyticsModule } from './analytics/analytics.module';
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const store = await redisStore({
-          url: configService.get<string>('REDIS_URI'),
-          socket: {
-            connectTimeout: 10000
-          }
-        });
-        return {
-          store: () => store,
-        };
+        try {
+          const store = await redisStore({
+            url: configService.get<string>('REDIS_URI'),
+            socket: {
+              connectTimeout: 5000,
+              reconnectStrategy: false // Don't block lambda retrying endlessly
+            }
+          });
+          return { store: () => store };
+        } catch (error) {
+          console.warn('⚠️ Redis Connection Failed on Vercel Startup! Falling back to in-memory cache.', error.message);
+          return {}; // Fallback to default in-memory behavior if Redis is unreachable
+        }
       },
       inject: [ConfigService],
     }),
