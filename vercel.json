@@ -20,22 +20,22 @@
             }
         }
     ],
-    "routes": [
+    "rewrites": [
         {
-            "src": "/api/nest/(.*)",
-            "dest": "backend/api/index.ts"
+            "source": "/api/nest/(.*)",
+            "destination": "/backend/api/index.ts"
         },
         {
-            "src": "/live/(.*)",
-            "dest": "/api/index.py"
+            "source": "/live/(.*)",
+            "destination": "/api/index.py"
         },
         {
-            "src": "/(.*\\..*)",
-            "dest": "frontend/dist/$1"
+            "source": "/assets/(.*)",
+            "destination": "/frontend/dist/assets/$1"
         },
         {
-            "src": "/(.*)",
-            "dest": "frontend/dist/index.html"
+            "source": "/(.*)",
+            "destination": "/frontend/dist/index.html"
         }
     ]
 }
