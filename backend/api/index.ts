@@ -5,35 +5,38 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 
 const server = express();
+let cachedApp: any;
 
-export const createNestServer = async (expressInstance: express.Express) => {
-    const app = await NestFactory.create(
-        AppModule,
-        new ExpressAdapter(expressInstance),
-    );
+async function bootstrap() {
+    if (!cachedApp) {
+        const app = await NestFactory.create(
+            AppModule,
+            new ExpressAdapter(server),
+        );
 
-    app.enableCors();
+        app.enableCors();
 
-    console.log('ENV CHECK:', {
-        MONGODB: !!process.env.MONGODB_URI,
-        REDIS: !!process.env.REDIS_URI
-    });
+        console.log('ENV CHECK:', {
+            MONGODB: !!process.env.MONGODB_URI,
+            REDIS: !!process.env.REDIS_URI
+        });
 
-    app.setGlobalPrefix('api/nest');
+        app.setGlobalPrefix('api/nest');
 
-    app.useGlobalPipes(
-        new ValidationPipe({
-            whitelist: true,
-            transform: true,
-            forbidNonWhitelisted: true,
-        }),
-    );
+        app.useGlobalPipes(
+            new ValidationPipe({
+                whitelist: true,
+                transform: true,
+                forbidNonWhitelisted: true,
+            }),
+        );
 
-    return app.init();
-};
+        cachedApp = await app.init();
+    }
+    return cachedApp;
+}
 
-createNestServer(server)
-    .then(() => console.log('Nest Ready'))
-    .catch(err => console.error('Nest Error', err));
-
-export default server;
+export default async function handler(req: any, res: any) {
+    await bootstrap();
+    server(req, res);
+}
