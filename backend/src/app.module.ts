@@ -31,6 +31,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
       useFactory: async (configService: ConfigService) => {
         const store = await redisStore({
           url: configService.get<string>('REDIS_URI'),
+          socket: {
+            connectTimeout: 10000
+          }
         });
         return {
           store: () => store,

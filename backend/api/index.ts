@@ -14,6 +14,11 @@ export const createNestServer = async (expressInstance: express.Express) => {
 
     app.enableCors();
 
+    console.log('ENV CHECK:', {
+        MONGODB: !!process.env.MONGODB_URI,
+        REDIS: !!process.env.REDIS_URI
+    });
+
     app.setGlobalPrefix('api/nest');
 
     app.useGlobalPipes(
