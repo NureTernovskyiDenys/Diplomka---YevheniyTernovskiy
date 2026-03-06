@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CardNav from '../components/CardNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Dumbbell, Activity, Target } from 'lucide-react';
+import { ChevronRight, Dumbbell, Activity, Target, Loader2 } from 'lucide-react';
 
 const MUSCLE_GROUPS = [
     { id: 'chest', name: 'Chest', category: 'Upper Body' },
@@ -87,6 +87,8 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [selectedEquipment, setSelectedEquipment] = useState(null);
     const [availableEquipment, setAvailableEquipment] = useState([]);
+    const [allEquipments, setAllEquipments] = useState([]);
+    const [ownedEquipments, setOwnedEquipments] = useState([]);
 
     useEffect(() => {
         if (!activeMuscle) return;
@@ -109,6 +111,8 @@ export default function Dashboard() {
                 data.forEach(ex => {
                     if (ex.equipments && Array.isArray(ex.equipments)) {
                         ex.equipments.forEach(eq => equipments.add(eq));
+                    } else if (ex.equipment && typeof ex.equipment === 'string') {
+                        equipments.add(ex.equipment);
                     }
                 });
                 setAvailableEquipment(Array.from(equipments).sort());
@@ -125,10 +129,40 @@ export default function Dashboard() {
         fetchExercises();
     }, [activeMuscle]);
 
-    // Local filter for selected equipment
-    const filteredExercises = selectedEquipment
-        ? exercises.filter(ex => ex.equipments?.includes(selectedEquipment))
-        : exercises;
+    // Fetch all available equipments on mount
+    useEffect(() => {
+        const fetchEquipments = async () => {
+            try {
+                const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+                const response = await fetch(`${baseUrl}/api/nest/exercises/equipments`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setAllEquipments(data);
+                }
+            } catch (error) {
+                console.error("Error fetching available equipments:", error);
+            }
+        };
+        fetchEquipments();
+    }, []);
+
+    // Local filter for selected equipment and globally owned equipment
+    const filteredExercises = exercises.filter(ex => {
+        const eqs = ex.equipments || (ex.equipment ? [ex.equipment] : []);
+
+        // filter by globally owned equipment (from the left panel directory)
+        if (ownedEquipments.length > 0) {
+            const hasOwned = eqs.some(eq => ownedEquipments.includes(eq));
+            if (!hasOwned && eqs.length > 0) return false;
+        }
+
+        // filter by the selected chip in the right panel
+        if (selectedEquipment) {
+            if (!eqs.includes(selectedEquipment)) return false;
+        }
+
+        return true;
+    });
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-cyan-500/30 pb-20">
@@ -162,27 +196,46 @@ export default function Dashboard() {
                     <div className="lg:col-span-4 order-2 lg:order-1 flex flex-col gap-6">
 
                         <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 backdrop-blur-sm overflow-hidden flex flex-col max-h-[500px]">
-                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Dumbbell className="w-5 h-5 text-indigo-400" />
-                                Muscle Directory
+                            <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Dumbbell className="w-5 h-5 text-indigo-400" />
+                                    My Equipment
+                                </div>
+                                {ownedEquipments.length > 0 && (
+                                    <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-md">
+                                        {ownedEquipments.length} selected
+                                    </span>
+                                )}
                             </h3>
-                            <div className="overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-2">
-                                {MUSCLE_GROUPS.map((muscle) => (
-                                    <button
-                                        key={muscle.id}
-                                        onClick={() => setActiveMuscle(muscle.id)}
-                                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${activeMuscle === muscle.id
-                                            ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-50'
-                                            : 'bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white'
-                                            }`}
-                                    >
-                                        <div className="flex flex-col items-start">
-                                            <span className="font-semibold">{muscle.name}</span>
-                                            <span className="text-xs opacity-60">{muscle.category}</span>
-                                        </div>
-                                        <ChevronRight className={`w-4 h-4 transition-transform ${activeMuscle === muscle.id ? 'translate-x-1 text-cyan-400' : 'opacity-30'}`} />
-                                    </button>
-                                ))}
+                            <div className="overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-2 relative min-h-[100px]">
+                                {allEquipments.length === 0 ? (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 gap-2">
+                                        <Loader2 className="w-5 h-5 animate-spin opacity-50" />
+                                        <span className="text-xs">Loading...</span>
+                                    </div>
+                                ) : (
+                                    allEquipments.map((eq) => (
+                                        <button
+                                            key={eq}
+                                            onClick={() => {
+                                                if (ownedEquipments.includes(eq)) {
+                                                    setOwnedEquipments(ownedEquipments.filter(e => e !== eq));
+                                                } else {
+                                                    setOwnedEquipments([...ownedEquipments, eq]);
+                                                }
+                                            }}
+                                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${ownedEquipments.includes(eq)
+                                                ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-50'
+                                                : 'bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white'
+                                                }`}
+                                        >
+                                            <span className="font-semibold capitalize text-sm">{eq}</span>
+                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${ownedEquipments.includes(eq) ? 'border-cyan-400 bg-cyan-400' : 'border-zinc-600'}`}>
+                                                {ownedEquipments.includes(eq) && <div className="w-2 h-2 bg-zinc-900 rounded-full" />}
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
                             </div>
                         </div>
 
@@ -274,11 +327,14 @@ export default function Dashboard() {
                                                                         {ex.name}
                                                                     </h5>
                                                                     <div className="flex flex-wrap gap-1.5 mt-auto">
-                                                                        {ex.equipments?.slice(0, 2).map((eq, i) => (
-                                                                            <span key={i} className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md border border-zinc-700/50 capitalize whitespace-nowrap">
-                                                                                {eq}
-                                                                            </span>
-                                                                        ))}
+                                                                        {(() => {
+                                                                            const eqs = ex.equipments || (ex.equipment ? [ex.equipment] : []);
+                                                                            return eqs.slice(0, 2).map((eq, i) => (
+                                                                                <span key={i} className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md border border-zinc-700/50 capitalize whitespace-nowrap">
+                                                                                    {eq}
+                                                                                </span>
+                                                                            ));
+                                                                        })()}
                                                                     </div>
                                                                 </div>
                                                             </div>
