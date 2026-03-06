@@ -63,11 +63,11 @@ const BODYPART_MAPPING = {
     'neck': 'neck'
 };
 
-function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
+function DualBodyMap({ activeMuscle, setActiveMuscle }) {
     // Determine which slugs should be highlighted based on the active API target
     const getHighlightedMuscles = () => {
         if (!activeMuscle) return [];
-        const map = mode === 'full' ? MUSCLE_MAPPING : BODYPART_MAPPING;
+        const map = MUSCLE_MAPPING;
         // Find all slugs that map to the active target
         const slugs = Object.keys(map).filter(k => map[k] === activeMuscle);
         return slugs;
@@ -77,7 +77,7 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
     const data = highlighted.length > 0 ? [{ name: 'Target', muscles: highlighted }] : [];
 
     const handleClick = ({ muscle }) => {
-        const map = mode === 'full' ? MUSCLE_MAPPING : BODYPART_MAPPING;
+        const map = MUSCLE_MAPPING;
         const apiTarget = map[muscle];
         if (apiTarget) setActiveMuscle(activeMuscle === apiTarget ? null : apiTarget);
     };
@@ -87,7 +87,6 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
             <div className="h-full bg-zinc-900/30 rounded-2xl border border-zinc-800/50 p-4 drop-shadow-2xl overflow-hidden flex items-center">
                 <Model
                     type="anterior"
-                    gender={gender}
                     data={data}
                     style={{ height: '350px', cursor: 'pointer' }}
                     onClick={handleClick}
@@ -98,7 +97,6 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
             <div className="h-full bg-zinc-900/30 rounded-2xl border border-zinc-800/50 p-4 drop-shadow-2xl overflow-hidden flex items-center">
                 <Model
                     type="posterior"
-                    gender={gender}
                     data={data}
                     style={{ height: '350px', cursor: 'pointer' }}
                     onClick={handleClick}
@@ -113,7 +111,6 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
 export default function Dashboard() {
     const [activeMuscle, setActiveMuscle] = useState(null);
     const [view, setView] = useState('front'); // 'front' | 'back'
-    const [gender, setGender] = useState('male');
 
     // Exercise Data State
     const [exercises, setExercises] = useState([]);
@@ -122,7 +119,6 @@ export default function Dashboard() {
     const [availableEquipment, setAvailableEquipment] = useState([]);
     const [allEquipments, setAllEquipments] = useState([]);
     const [ownedEquipments, setOwnedEquipments] = useState([]);
-    const [targetMode, setTargetMode] = useState('simplified');
     const [targetOptions, setTargetOptions] = useState([]);
     const [showResults, setShowResults] = useState(false);
 
@@ -133,7 +129,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchTargets = async () => {
             const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-            const endpoint = targetMode === 'simplified' ? '/api/nest/exercises/bodyparts' : '/api/nest/exercises/muscles';
+            const endpoint = '/api/nest/exercises/muscles';
             try {
                 const response = await fetch(`${baseUrl}${endpoint}`);
                 if (response.ok) {
@@ -146,7 +142,7 @@ export default function Dashboard() {
             }
         };
         fetchTargets();
-    }, [targetMode]);
+    }, []);
 
     const handleSearch = async () => {
         setLoading(true);
@@ -315,49 +311,7 @@ export default function Dashboard() {
 
                     {/* Center Panel: Interactive Map */}
                     <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center">
-                        <div className="flex w-full items-center justify-between mb-4 px-2">
-                            {/* Gender Switch */}
-                            <div className="bg-zinc-900/60 rounded-xl p-1 flex relative border border-zinc-800/50 shadow-inner">
-                                <div className={`absolute inset-y-1 w-[calc(50%-4px)] bg-zinc-800 rounded-xl transition-all duration-300 ease-out z-0 ${gender === 'male' ? 'left-1' : 'left-[calc(50%+2px)]'}`} />
-                                <button
-                                    onClick={() => setGender('male')}
-                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${gender === 'male' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Male
-                                </button>
-                                <button
-                                    onClick={() => setGender('female')}
-                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${gender === 'female' ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Female
-                                </button>
-                            </div>
-
-                            {/* Mode Switch */}
-                            <div className="bg-zinc-900/60 rounded-xl p-1 flex relative border border-zinc-800/50 shadow-inner">
-                                <div className={`absolute inset-y-1 w-[calc(50%-4px)] bg-zinc-800 rounded-xl transition-all duration-300 ease-out z-0 ${targetMode === 'simplified' ? 'left-1' : 'left-[calc(50%+2px)]'}`} />
-                                <button
-                                    onClick={() => {
-                                        setTargetMode('simplified');
-                                        setActiveMuscle(null);
-                                    }}
-                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${targetMode === 'simplified' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Simplified
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setTargetMode('full');
-                                        setActiveMuscle(null);
-                                    }}
-                                    className={`relative z-10 px-4 py-1.5 text-xs font-bold transition-colors ${targetMode === 'full' ? 'text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                >
-                                    Full
-                                </button>
-                            </div>
-                        </div>
-
-                        <DualBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} mode={targetMode} gender={gender} />
+                        <DualBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} />
                     </div>
 
                     {/* Right Panel: Selected Muscle Info */}
