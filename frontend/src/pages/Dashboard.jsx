@@ -89,7 +89,7 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
                     type="anterior"
                     gender={gender}
                     data={data}
-                    style={{ height: '560px', cursor: 'pointer' }}
+                    style={{ height: '600px', cursor: 'pointer' }}
                     onClick={handleClick}
                     highlightedColors={['#06b6d4']} // cyan-500
                     bodyColor="#27272a"
@@ -100,7 +100,7 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
                     type="posterior"
                     gender={gender}
                     data={data}
-                    style={{ height: '560px', cursor: 'pointer' }}
+                    style={{ height: '600px', cursor: 'pointer' }}
                     onClick={handleClick}
                     highlightedColors={['#06b6d4']} // cyan-500
                     bodyColor="#27272a"
@@ -112,39 +112,17 @@ function DualBodyMap({ activeMuscle, setActiveMuscle, mode, gender }) {
 
 export default function Dashboard() {
     const [activeMuscle, setActiveMuscle] = useState(null);
-    const [view, setView] = useState('front'); // 'front' | 'back'
 
     // Exercise Data State
     const [exercises, setExercises] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedEquipment, setSelectedEquipment] = useState(null);
     const [availableEquipment, setAvailableEquipment] = useState([]);
-    const [allEquipments, setAllEquipments] = useState([]);
-    const [ownedEquipments, setOwnedEquipments] = useState([]);
-    const [targetOptions, setTargetOptions] = useState([]);
     const [showResults, setShowResults] = useState(false);
 
     useEffect(() => {
         setShowResults(false);
-    }, [activeMuscle, ownedEquipments]);
-
-    useEffect(() => {
-        const fetchTargets = async () => {
-            const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-            const endpoint = '/api/nest/exercises/muscles';
-            try {
-                const response = await fetch(`${baseUrl}${endpoint}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) setTargetOptions(data);
-                    else if (data && Array.isArray(data.data)) setTargetOptions(data.data);
-                }
-            } catch (e) {
-                console.error("Error fetching targets:", e);
-            }
-        };
-        fetchTargets();
-    }, []);
+    }, [activeMuscle]);
 
     const handleSearch = async () => {
         setLoading(true);
@@ -154,7 +132,6 @@ export default function Dashboard() {
 
         const terms = [];
         if (activeMuscle) terms.push(activeMuscle);
-        if (ownedEquipments.length > 0) terms.push(...ownedEquipments);
 
         const qVal = terms.join('+');
 
@@ -185,42 +162,9 @@ export default function Dashboard() {
         }
     };
 
-    // Fetch all available equipments on mount
-    useEffect(() => {
-        const fetchEquipments = async () => {
-            try {
-                const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-                const response = await fetch(`${baseUrl}/api/nest/exercises/equipments`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setAllEquipments(data);
-                    } else if (data && Array.isArray(data.data)) {
-                        setAllEquipments(data.data);
-                    } else {
-                        console.error("Equipments API returned non-array data:", data);
-                        setAllEquipments([]);
-                    }
-                } else {
-                    console.error("Equipments API failed with status:", response.status);
-                    setAllEquipments([]);
-                }
-            } catch (error) {
-                console.error("Error fetching available equipments:", error);
-            }
-        };
-        fetchEquipments();
-    }, []);
-
-    // Local filter for selected equipment and globally owned equipment
+    // Local filter for selected equipment
     const filteredExercises = exercises.filter(ex => {
         const eqs = ex.equipments || (ex.equipment ? [ex.equipment] : []);
-
-        // filter by globally owned equipment (from the left panel directory)
-        if (ownedEquipments.length > 0) {
-            const hasOwned = eqs.some(eq => ownedEquipments.includes(eq));
-            if (!hasOwned && eqs.length > 0) return false;
-        }
 
         // filter by the selected chip in the right panel
         if (selectedEquipment) {
@@ -258,66 +202,13 @@ export default function Dashboard() {
                 {/* Dashboard Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                    {/* Left Panel: Filters & List */}
-                    <div className="lg:col-span-3 order-2 lg:order-1 flex flex-col gap-6">
-
-                        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-6 backdrop-blur-sm overflow-hidden flex flex-col max-h-[500px]">
-                            <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Dumbbell className="w-5 h-5 text-indigo-400" />
-                                    My Equipment
-                                </div>
-                                {ownedEquipments.length > 0 && (
-                                    <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-md">
-                                        {ownedEquipments.length} selected
-                                    </span>
-                                )}
-                            </h3>
-                            <div className="overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-2 relative min-h-[100px]">
-                                {allEquipments.length === 0 ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 gap-2">
-                                        <Loader2 className="w-5 h-5 animate-spin opacity-50" />
-                                        <span className="text-xs">Loading items...</span>
-                                    </div>
-                                ) : Array.isArray(allEquipments) ? (
-                                    allEquipments.map((eq) => {
-                                        // Ensure eq is a primitive string to avoid React rendering errors with Objects
-                                        const eqName = typeof eq === 'string' ? eq : (eq?.name || 'Unknown');
-                                        return (
-                                            <button
-                                                key={eqName}
-                                                onClick={() => {
-                                                    if (ownedEquipments.includes(eqName)) {
-                                                        setOwnedEquipments(ownedEquipments.filter(e => e !== eqName));
-                                                    } else {
-                                                        setOwnedEquipments([...ownedEquipments, eqName]);
-                                                    }
-                                                }}
-                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${ownedEquipments.includes(eqName)
-                                                    ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-50'
-                                                    : 'bg-zinc-800/40 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white'
-                                                    }`}
-                                            >
-                                                <span className="font-semibold capitalize text-sm">{eqName}</span>
-                                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${ownedEquipments.includes(eqName) ? 'border-cyan-400 bg-cyan-400' : 'border-zinc-600'}`}>
-                                                    {ownedEquipments.includes(eqName) && <div className="w-2 h-2 bg-zinc-900 rounded-full" />}
-                                                </div>
-                                            </button>
-                                        )
-                                    })
-                                ) : null}
-                            </div>
-                        </div>
-
-                    </div>
-
                     {/* Center Panel: Interactive Map */}
-                    <div className="lg:col-span-5 order-1 lg:order-2 flex flex-col items-center">
+                    <div className="lg:col-span-7 order-1 lg:order-1 flex flex-col items-center">
                         <DualBodyMap activeMuscle={activeMuscle} setActiveMuscle={setActiveMuscle} />
                     </div>
 
                     {/* Right Panel: Selected Muscle Info */}
-                    <div className="lg:col-span-4 order-3 flex flex-col gap-6">
+                    <div className="lg:col-span-5 order-2 lg:order-2 flex flex-col gap-6">
                         <AnimatePresence mode="popLayout">
                             {showResults ? (
                                 <motion.div
@@ -425,7 +316,7 @@ export default function Dashboard() {
                                         </button>
                                     </div>
                                 </motion.div>
-                            ) : (activeMuscle || ownedEquipments.length > 0) ? (
+                            ) : activeMuscle ? (
                                 <motion.div
                                     key="ready"
                                     initial={{ opacity: 0, y: 20 }}
@@ -435,7 +326,6 @@ export default function Dashboard() {
                                 >
                                     <div className="flex flex-wrap gap-3 justify-center">
                                         {activeMuscle && <span className="px-4 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-semibold capitalize border border-indigo-500/50">Target: {activeMuscle}</span>}
-                                        {ownedEquipments.length > 0 && <span className="px-4 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-full text-sm font-semibold border border-cyan-500/50">Equipments: {ownedEquipments.length}</span>}
                                     </div>
                                     <h3 className="text-2xl font-black text-white">Ready to Search</h3>
                                     <p className="text-sm max-w-[300px] text-zinc-400">
