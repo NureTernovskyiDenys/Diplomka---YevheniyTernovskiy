@@ -37,7 +37,7 @@ export default function Login() {
 
     return (
         <div className="bg-zinc-950 min-h-screen font-sans selection:bg-cyan-500/30 flex flex-col">
-            <CardNav />
+            <CardNav minimal={true} />
 
             <main className="flex-grow flex items-center justify-center p-4">
                 <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden">

@@ -16,7 +16,7 @@ function Home() {
 
     return (
         <div className="bg-zinc-950 min-h-screen font-sans selection:bg-cyan-500/30">
-            <CardNav />
+            <CardNav minimal={true} />
 
             <AuroraBackground>
                 <div className="flex flex-col items-center justify-center min-h-[100vh] p-4 text-center">

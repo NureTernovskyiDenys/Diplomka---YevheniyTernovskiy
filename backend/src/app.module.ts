@@ -29,6 +29,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
+        if (process.env.VERCEL) {
+          console.warn('⚠️ Running in Vercel Edge. Bypassing Redis connection to prevent timeout crashes.');
+          return {};
+        }
         try {
           const store = await redisStore({
             url: configService.get<string>('REDIS_URI'),
