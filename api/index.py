@@ -79,6 +79,9 @@ async def analyze_chunk(video_chunk: UploadFile = File(...)):
             temp_file.write(await video_chunk.read())
             temp_video_path = temp_file.name
 
+        import cv2
+        cv2.setNumThreads(0)
+        
         cap = cv2.VideoCapture(temp_video_path)
 
         global _global_rep_state
@@ -92,18 +95,23 @@ async def analyze_chunk(video_chunk: UploadFile = File(...)):
         rep_count_increment = 0
         feedback_messages = []
 
+        print("Starting video capture loop...")
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
+                print("End of chunk reached.")
                 break # Reached end of chunk
             
+            print("Frame read successfully. Color converting...")
             # Recolor image to RGB for MediaPipe
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
           
+            print("Making MediaPipe detection...")
             # Make detection
             mp_pose, pose = get_pose_model()
             results = pose.process(image)
+            print("MediaPipe detection finished.")
         
             # Extract landmarks and calculate angles/form
             if results.pose_landmarks:
