@@ -12,6 +12,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { WorkoutsModule } from './workouts/workouts.module';
 import { AdminModule } from './admin/admin.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { BlogModule } from './blog/blog.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     WorkoutsModule,
     AdminModule,
     AnalyticsModule,
+    BlogModule,
   ],
   controllers: [AppController],
   providers: [AppService],

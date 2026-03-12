@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, Calculator, Scale, Target, LogOut, User } from 'lucide-react';
+import { ChevronDown, Calculator, Scale, Target, LogOut, User, Activity, Sparkles } from 'lucide-react';
 import { isAuthenticated, logout, getUserObject } from '../utils/auth';
 
 export default function CardNav({ minimal = false }) {
@@ -12,11 +13,16 @@ export default function CardNav({ minimal = false }) {
     const [user, setUser] = useState(null);
     const isAuth = isAuthenticated();
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (isAuth) {
-            setUser(getUserObject());
+            const userObj = getUserObject();
+            if (user?.email !== userObj?.email) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setUser(userObj);
+            }
         }
-    }, [isAuth, location.pathname]);
+    }, [isAuth, user?.email]);
 
     const handleLogout = () => {
         logout();
@@ -43,8 +49,9 @@ export default function CardNav({ minimal = false }) {
                 {/* Desktop Navigation */}
                 {!minimal && (
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
-                        <button onClick={() => navigate('/')} className={`transition-colors ${location.pathname === '/' ? 'text-white' : 'hover:text-white'}`}>Home</button>
-                        <button onClick={() => navigate('/dashboard')} className={`transition-colors ${location.pathname === '/dashboard' ? 'text-white' : 'hover:text-white'}`}>Workouts</button>
+                        <button onClick={() => navigate('/map')} className={`transition-colors ${location.pathname === '/map' ? 'text-white' : 'hover:text-white'}`}>Body Map</button>
+                        <button onClick={() => navigate('/dashboard')} className={`transition-colors ${location.pathname === '/dashboard' ? 'text-white' : 'hover:text-white'}`}>Exercises</button>
+                        <button onClick={() => navigate('/workouts')} className={`transition-colors ${location.pathname.startsWith('/workout') ? 'text-white' : 'hover:text-white'}`}>Workouts</button>
 
                         {/* Tools Dropdown */}
                         <div
@@ -65,7 +72,10 @@ export default function CardNav({ minimal = false }) {
                                         transition={{ duration: 0.2 }}
                                         className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden py-2"
                                     >
-                                        <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors group">
+                                        <button
+                                            onClick={() => navigate('/tools/calories')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors group"
+                                        >
                                             <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition-colors">
                                                 <Scale className="w-4 h-4" />
                                             </div>
@@ -75,23 +85,29 @@ export default function CardNav({ minimal = false }) {
                                             </div>
                                         </button>
 
-                                        <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors group">
+                                        <button
+                                            onClick={() => navigate('/tools/macros')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors group"
+                                        >
                                             <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
                                                 <Calculator className="w-4 h-4" />
                                             </div>
                                             <div>
-                                                <div className="text-white text-sm">Macro Calculator</div>
-                                                <div className="text-zinc-500 text-xs">Optimize your diet</div>
+                                                <div className="text-white text-sm">Macro Splitter</div>
+                                                <div className="text-zinc-500 text-xs">Customize your diet</div>
                                             </div>
                                         </button>
 
-                                        <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors group">
-                                            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-                                                <Target className="w-4 h-4" />
+                                        <button
+                                            onClick={() => navigate('/tools/onerepmax')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors group"
+                                        >
+                                            <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                                <Activity className="w-4 h-4 text-rose-400" />
                                             </div>
                                             <div>
                                                 <div className="text-white text-sm">One Rep Max</div>
-                                                <div className="text-zinc-500 text-xs">Calculate your PR</div>
+                                                <div className="text-zinc-500 text-xs">Estimate your peak strength</div>
                                             </div>
                                         </button>
                                     </motion.div>
@@ -99,7 +115,7 @@ export default function CardNav({ minimal = false }) {
                             </AnimatePresence>
                         </div>
 
-                        <button className="hover:text-white transition-colors">Blog</button>
+                        <button onClick={() => navigate('/blog')} className={`transition-colors ${location.pathname.startsWith('/blog') ? 'text-white' : 'hover:text-white'}`}>Blog</button>
                     </div>
                 )}
 
@@ -135,6 +151,13 @@ export default function CardNav({ minimal = false }) {
                                         >
                                             <User className="w-4 h-4 text-zinc-400" />
                                             My Profile
+                                        </button>
+                                        <button
+                                            onClick={() => navigate('/subscriptions')}
+                                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-zinc-800/50 transition-colors text-zinc-300 text-sm"
+                                        >
+                                            <Sparkles className="w-4 h-4 text-blue-400" />
+                                            Subscriptions
                                         </button>
                                         <button
                                             onClick={handleLogout}

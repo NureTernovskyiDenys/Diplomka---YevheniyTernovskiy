@@ -1,9 +1,18 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 import os
 
 app = FastAPI(title="Fitness App Live Analysis API", description="Computer Vision module for chunked video exercise analysis.", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Helper Math ---
 def calculate_angle(a, b, c):
@@ -29,6 +38,7 @@ def calculate_angle(a, b, c):
 # Lazy load MediaPipe Pose to prevent Vercel Serverless SIGBUS core dumps on cold boot
 _mp_pose = None
 _pose_model = None
+_global_rep_state = "extended"
 
 def get_pose_model():
     global _mp_pose, _pose_model
@@ -61,13 +71,18 @@ async def analyze_chunk(video_chunk: UploadFile = File(...)):
             temp_file.write(await video_chunk.read())
             temp_video_path = temp_file.name
 
-        # Initialize VideoCapture with the temp file
         cap = cv2.VideoCapture(temp_video_path)
+
+        global _global_rep_state
+        global _extension_frames
         
+        # Initialize if not exists (handling first run)
+        if '_extension_frames' not in globals():
+            _extension_frames = 0
+            
         frames_processed = 0
         rep_count_increment = 0
         feedback_messages = []
-        stage = None
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -86,32 +101,39 @@ async def analyze_chunk(video_chunk: UploadFile = File(...)):
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
                 
-                # --- Example: Detect Squat Depth (Hip, Knee, Ankle) ---
-                # Get coordinates
-                hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
-                knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
-                ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+                # --- Upper Body Tracking (Webcam Friendly) ---
+                # Get coordinates for Left Arm (Shoulder, Elbow, Wrist)
+                shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+                wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
                 
-                # Calculate angle
-                angle = calculate_angle(hip, knee, ankle)
+                # Calculate angle of the elbow joint
+                angle = calculate_angle(shoulder, elbow, wrist)
                 
-                # Basic rep counting logic (State machine: Down -> Up)
-                # If angle < 90, user is down in squat. If > 160, user is standing.
-                # Since this is a chunk, we just track the lowest point and highest point to estimate a rep cycle.
-                
-                # Extremely simplified demonstration logic for chunk accumulation:
-                if angle > 160:
-                    stage = "up"
-                if angle < 90 and stage == "up":
-                    stage = "down"
+                # Basic rep counting logic (State machine: Extended -> Flexed)
+                # If angle > 150, arm is fully extended. If < 50, arm is fully bent (curl).
+                # To prevent jitter, we require the arm to stay extended for at least 5 frames before it can count a flexion.
+                if angle > 150:
+                    _extension_frames += 1
+                    if _extension_frames >= 5:
+                        _global_rep_state = "extended"
+                else:
+                    if angle > 90:
+                        _extension_frames = 0 # Reset if they bend early
+                    
+                if angle < 50 and _global_rep_state == "extended":
+                    _global_rep_state = "flexed"
+                    _extension_frames = 0
                     rep_count_increment += 1
-                    feedback_messages.append("Good depth on squat!")
+                    feedback_messages.append("Good curl!")
             
             frames_processed += 1
 
         cap.release()
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
     finally:
         # Clean up the temp file

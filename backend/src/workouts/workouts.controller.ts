@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { WorkoutsService } from './workouts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -13,7 +13,12 @@ export class WorkoutsController {
     }
 
     @Get()
-    findAll(@Request() req: any) {
+    findAll(@Request() req: any, @Query('search') search?: string, @Query('author') author?: string) {
+        // Evaluate if this is a global fetch
+        if (search || author) {
+            return this.workoutsService.findAllPublic(search, author);
+        }
+        // If no filter, return the user's personal list
         return this.workoutsService.findAllForUser(req.user._id);
     }
 
@@ -22,9 +27,29 @@ export class WorkoutsController {
         return this.workoutsService.findOne(req.user._id, id);
     }
 
+    @Get(':id/recommendation')
+    getRecommendation(@Request() req: any, @Param('id') id: string) {
+        return this.workoutsService.getAiRecommendation(req.user._id, id);
+    }
+
     @Put(':id')
     update(@Request() req: any, @Param('id') id: string, @Body() updateWorkoutDto: any) {
         return this.workoutsService.update(req.user._id, id, updateWorkoutDto);
+    }
+
+    @Post(':id/exercises')
+    addExercise(@Request() req: any, @Param('id') id: string, @Body() body: { exerciseId: string }) {
+        return this.workoutsService.addExerciseToWorkout(req.user._id, id, body.exerciseId);
+    }
+
+    @Put(':id/exercises/:exerciseObjId')
+    updateExercise(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Param('exerciseObjId') exerciseObjId: string,
+        @Body() body: { sets?: number; reps?: number; weight?: number; }
+    ) {
+        return this.workoutsService.updateExerciseInWorkout(req.user._id, id, exerciseObjId, body);
     }
 
     @Delete(':id')
