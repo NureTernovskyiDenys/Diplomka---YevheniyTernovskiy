@@ -231,8 +231,10 @@ export default function ActiveExercise() {
             const formData = new FormData();
             formData.append('video_chunk', blob, `chunk-${Date.now()}.webm`);
 
-            // Calls the Python FastAPI
-            const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+            // Calls the separated Python FastAPI (Local or Render.com)
+            const baseUrl = window.location.hostname === 'localhost'
+                ? 'http://localhost:8000'
+                : (import.meta.env.VITE_AI_API_URL || 'https://YOUR_RENDER_APP_URL.onrender.com');
             const response = await fetch(`${baseUrl}/live/analyze/chunk`, {
                 method: 'POST',
                 body: formData
