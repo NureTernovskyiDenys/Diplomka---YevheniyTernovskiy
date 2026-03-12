@@ -231,8 +231,9 @@ export default function ActiveExercise() {
             const formData = new FormData();
             formData.append('video_chunk', blob, `chunk-${Date.now()}.webm`);
 
-            // Calls the Python FastAPI on port 8000
-            const response = await fetch('http://localhost:8000/live/analyze/chunk', {
+            // Calls the Python FastAPI
+            const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+            const response = await fetch(`${baseUrl}/live/analyze/chunk`, {
                 method: 'POST',
                 body: formData
             });
