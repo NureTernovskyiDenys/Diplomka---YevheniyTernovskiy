@@ -4,6 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 import os
 
+# Limit multiprocessing threads to prevent SIGBUS core dumps in Vercel's AWS Lambda /dev/shm 64MB constraint
+os.environ['JOBLIB_TEMP_FOLDER'] = '/tmp'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+
 app = FastAPI(title="Fitness App Live Analysis API", description="Computer Vision module for chunked video exercise analysis.", version="1.0.0")
 
 app.add_middleware(
