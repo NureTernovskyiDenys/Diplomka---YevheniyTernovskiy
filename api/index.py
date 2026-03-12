@@ -43,17 +43,14 @@ def calculate_angle(a, b, c):
         
     return angle
 
-# Lazy load MediaPipe Pose to prevent Vercel Serverless SIGBUS core dumps on cold boot
-_mp_pose = None
-_pose_model = None
+# Global MediaPipe Pose Initialization
+import mediapipe as mp
+_mp_pose = mp.solutions.pose
+_pose_model = _mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
 _global_rep_state = "extended"
 
 def get_pose_model():
-    global _mp_pose, _pose_model
-    if _pose_model is None:
-        import mediapipe as mp
-        _mp_pose = mp.solutions.pose
-        _pose_model = _mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
     return _mp_pose, _pose_model
 
 @app.get("/live/health")
