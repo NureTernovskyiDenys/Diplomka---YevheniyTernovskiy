@@ -45,7 +45,9 @@ def calculate_angle(a, b, c):
 
 # Global MediaPipe Pose Initialization
 import mediapipe as mp
-_mp_pose = mp.solutions.pose
+import mediapipe.python.solutions.pose as mp_pose
+
+_mp_pose = mp_pose
 _pose_model = _mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 _global_rep_state = "extended"
