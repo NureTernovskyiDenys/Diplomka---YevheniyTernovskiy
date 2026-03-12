@@ -175,7 +175,13 @@ export default function ActiveExercise() {
             const captureStandaloneChunk = () => {
                 if (!isLiveRef.current || !videoRef.current?.srcObject) return;
 
-                const mr = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                let options = { mimeType: 'video/webm' };
+                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                    options = { mimeType: 'video/webm;codecs=vp8' };
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    options = { mimeType: 'video/webm;codecs=vp9' };
+                }
+                const mr = new MediaRecorder(stream, options);
                 mediaRecorderRef.current = mr;
 
                 mr.ondataavailable = async (e) => {
