@@ -42,10 +42,11 @@ export const AuthProvider = ({ children }) => {
             const profileResponse = await api.get('/users/profile');
             setUser(profileResponse.data);
             return { success: true };
-        } catch (error) {
+        } catch (error: any) {
+            console.error("Login exception:", error);
             return {
                 success: false,
-                error: error.response?.data?.message || 'Login failed'
+                error: error.response?.data?.message || `Login failed, cuz of: ${error.message || String(error)}`
             };
         }
     };

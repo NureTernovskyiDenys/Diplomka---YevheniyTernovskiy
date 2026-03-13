@@ -3,8 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 // Use standard localhost for iOS simulator, or 10.0.2.2 for Android Emulator connecting to host machine.
-// If testing on a physical device, replace with your computer's actual local IP address (e.g., 192.168.1.X)
-export const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+// We are temporarily routing to the live Render server to bypass local Windows Firewall blocks.
+export const API_BASE_URL = 'https://diplomka-flask.onrender.com/api/nest';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
